@@ -1,0 +1,32 @@
+COMPOSE := docker compose -f ../brighter-compose/docker-compose.yml
+export COMPOSE_PROFILES := e2e
+export OTEL_SDK_DISABLED := true
+export STRIPE_API_BASE := http://stripe-mock:12111
+E2E_ADMIN_USER ?= e2e_admin
+E2E_ADMIN_PASS ?= Adm1nSecret!
+export E2E_ADMIN_USER
+export E2E_ADMIN_PASS
+
+.PHONY: up seed seed-admin e2e lint typecheck clean-e2e-db
+
+up:
+	$(COMPOSE) up -d --wait
+
+seed-admin:
+	$(COMPOSE) exec -T -e E2E_ADMIN_USER -e E2E_ADMIN_PASS users-ms uv run python - < scripts/seed_admin.py
+
+seed: seed-admin
+	$(COMPOSE) exec -T payments-ms uv run python scripts/seed_subscription_plans.py
+
+e2e: up seed
+	uv run pytest -n auto
+
+lint:
+	uv run ruff check . && uv run ruff format --check .
+
+typecheck:
+	uvx ty check e2e conftest.py
+
+clean-e2e-db:
+	$(COMPOSE) rm -fsv db || true
+	docker volume rm brighter-compose_pgdata || true

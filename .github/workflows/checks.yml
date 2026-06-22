@@ -1,0 +1,32 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - brighter-users-ms
+          - brighter-properties-ms
+          - brighter-bookings-ms
+          - brighter-payments-ms
+          - brighter-notifications-ms
+    steps:
+      - uses: actions/checkout@v4
+        with: { repository: "BrighterProject/${{ matrix.service }}", path: "${{ matrix.service }}" }
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        working-directory: ${{ matrix.service }}
+        run: uv sync --all-extras --dev
+      - name: Ruff lint + format
+        working-directory: ${{ matrix.service }}
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: ty type check
+        working-directory: ${{ matrix.service }}
+        run: uvx ty check app
+      - name: Unit tests + coverage
+        working-directory: ${{ matrix.service }}
+        env:
+          OTEL_SDK_DISABLED: "true"
+        run: uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
