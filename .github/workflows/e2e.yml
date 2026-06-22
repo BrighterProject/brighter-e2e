@@ -24,6 +24,12 @@ jobs:
         with: { repository: BrighterProject/brighter-payments-ms, path: brighter-payments-ms }
       - uses: actions/checkout@v4
         with: { repository: BrighterProject/brighter-notifications-ms, path: brighter-notifications-ms }
+      - uses: actions/checkout@v4
+        with: { repository: BrighterProject/brighter-frontend, path: brighter-frontend }
+      - uses: actions/checkout@v4
+        with: { repository: BrighterProject/brighter-admin-panel, path: brighter-admin-panel }
+      - uses: actions/checkout@v4
+        with: { repository: BrighterProject/brighter-postgres, path: brighter-postgres }
       - uses: astral-sh/setup-uv@v5
       - name: Lint + typecheck the e2e suite
         working-directory: brighter-e2e
