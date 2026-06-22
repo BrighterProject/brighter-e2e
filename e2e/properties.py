@@ -5,8 +5,18 @@ from __future__ import annotations
 import httpx
 
 
-def create_property(owner_client: httpx.Client) -> dict:
-    """Create a minimal valid property owned by the logged-in owner."""
+def create_property(
+    owner_client: httpx.Client, cancellation_policy: str = "free"
+) -> dict:
+    """Create a minimal valid property owned by the logged-in owner.
+
+    Args:
+        owner_client: Authenticated client for the property owner.
+        cancellation_policy: One of "free", "moderate", "strict".
+
+    Returns:
+        The created property record.
+    """
     payload = {
         "property_type": "apartment",
         "status": "active",
@@ -22,7 +32,7 @@ def create_property(owner_client: httpx.Client) -> dict:
         "amenities": ["wifi"],
         "has_parking": False,
         "min_nights": 1,
-        "cancellation_policy": "free",
+        "cancellation_policy": cancellation_policy,
         "translations": [
             {
                 "locale": "bg",
