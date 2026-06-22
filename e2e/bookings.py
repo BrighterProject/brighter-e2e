@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from typing import Any
 
 import httpx
 
 
 def create_booking(
     client: httpx.Client, property_id: str, *, nights: int = 2, email: str = "guest@example.test"
-) -> dict:
+) -> dict[str, Any]:
     """Create a booking starting tomorrow for `nights` nights."""
     start = date.today() + timedelta(days=1)
     end = start + timedelta(days=nights)

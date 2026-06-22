@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import httpx
+
 from e2e import bookings, config, properties, users
 from e2e.clients import stripe_hooks
 from e2e.http import make_client
 
 
-def test_checkout_then_webhook_marks_paid(owner_client):
+def test_checkout_then_webhook_marks_paid(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
     owner, _ = owner_client
     prop = properties.create_property(owner)
     with make_client() as guest:

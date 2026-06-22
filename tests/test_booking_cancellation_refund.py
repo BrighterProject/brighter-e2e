@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 
 from e2e import bookings, properties, users
@@ -9,7 +10,7 @@ from e2e.http import make_client
 
 
 @pytest.mark.parametrize("policy", ["free", "moderate", "strict"])
-def test_cancellation_under_each_policy(owner_client, policy):
+def test_cancellation_under_each_policy(owner_client: tuple[httpx.Client, dict[str, str]], policy: str) -> None:
     owner, _ = owner_client
     prop = properties.create_property(owner, cancellation_policy=policy)
     with make_client() as guest:

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 
 def create_property(
     owner_client: httpx.Client, cancellation_policy: str = "free"
-) -> dict:
+) -> dict[str, Any]:
     """Create a minimal valid property owned by the logged-in owner.
 
     Args:

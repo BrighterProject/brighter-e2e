@@ -5,7 +5,7 @@ import json
 from e2e.clients import stripe_hooks
 
 
-def test_signed_headers_match_stripe_scheme():
+def test_signed_headers_match_stripe_scheme() -> None:
     payload = json.dumps({"id": "evt_1"}).encode()
     headers = stripe_hooks.signed_headers(payload, secret="whsec_test")
     sig = headers["Stripe-Signature"]

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import httpx
+
 from e2e import properties
 
 
-def test_property_create_read_delete(owner_client, anon_client):
+def test_property_create_read_delete(owner_client: tuple[httpx.Client, dict[str, str]], anon_client: httpx.Client) -> None:
     client, _ = owner_client
     created = properties.create_property(client)
     prop_id = created["id"]
@@ -20,7 +22,7 @@ def test_property_create_read_delete(owner_client, anon_client):
     assert anon_client.get(f"/properties/{prop_id}").status_code == 404
 
 
-def test_property_requires_bg_translation(owner_client):
+def test_property_requires_bg_translation(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
     client, _ = owner_client
     bad = {
         "property_type": "apartment",

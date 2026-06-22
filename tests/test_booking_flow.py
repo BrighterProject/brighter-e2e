@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import httpx
+
 from e2e import bookings, properties, users
 from e2e.clients import mailpit
 from e2e.http import make_client
 
 
-def test_booking_create_notifies_and_confirms(owner_client):
+def test_booking_create_notifies_and_confirms(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
     owner, _ = owner_client
     prop = properties.create_property(owner)
 
@@ -27,7 +29,7 @@ def test_booking_create_notifies_and_confirms(owner_client):
     assert resp.json()["status"] == "CONFIRMED"
 
 
-def test_illegal_status_transition_rejected(owner_client):
+def test_illegal_status_transition_rejected(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
     owner, _ = owner_client
     prop = properties.create_property(owner)
     with make_client() as guest:

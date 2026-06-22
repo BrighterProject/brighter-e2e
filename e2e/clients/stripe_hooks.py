@@ -11,6 +11,7 @@ import hashlib
 import hmac
 import json
 import time
+from typing import Any
 
 import httpx
 
@@ -32,7 +33,7 @@ def send_event(
     return client.post(path, content=payload, headers=headers)
 
 
-def checkout_completed(session_id: str, metadata: dict[str, str]) -> dict:
+def checkout_completed(session_id: str, metadata: dict[str, str]) -> dict[str, Any]:
     """Build a checkout.session.completed event carrying handler metadata."""
     return {
         "id": f"evt_{session_id}",
