@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
 
 import httpx
@@ -40,3 +41,23 @@ def anon_client() -> Generator[httpx.Client, None, None]:
 @pytest.fixture
 def user_record(anon_client: httpx.Client) -> dict[str, str]:
     return users.register_user(anon_client)
+
+
+@pytest.fixture
+def owner_client() -> Generator[tuple[httpx.Client, dict[str, str]], None, None]:
+    with make_client() as client:
+        record = users.register_owner(client)
+        users.login(client, record["username"], record["password"])
+        yield client, record
+
+
+@pytest.fixture
+def admin_client() -> Generator[httpx.Client, None, None]:
+    """A client logged in as the seeded admin (see Task 12 admin seeding).
+
+    Credentials come from E2E_ADMIN_USER / E2E_ADMIN_PASS, which the
+    `make seed-admin` target / CI step set to match the seeded admin.
+    """
+    with make_client() as client:
+        users.login(client, os.environ["E2E_ADMIN_USER"], os.environ["E2E_ADMIN_PASS"])
+        yield client
