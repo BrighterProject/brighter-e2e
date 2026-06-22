@@ -8,7 +8,9 @@ from e2e import config
 from e2e.clients import stripe_hooks
 
 
-def test_owner_subscription_lifecycle(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
+def test_owner_subscription_lifecycle(
+    owner_client: tuple[httpx.Client, dict[str, str]],
+) -> None:
     owner, _ = owner_client
 
     plans = owner.get("/payments/subscriptions/plans")

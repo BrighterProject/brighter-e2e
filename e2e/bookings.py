@@ -9,7 +9,11 @@ import httpx
 
 
 def create_booking(
-    client: httpx.Client, property_id: str, *, nights: int = 2, email: str = "guest@example.test"
+    client: httpx.Client,
+    property_id: str,
+    *,
+    nights: int = 2,
+    email: str = "guest@example.test",
 ) -> dict[str, Any]:
     """Create a booking starting tomorrow for `nights` nights."""
     start = date.today() + timedelta(days=1)

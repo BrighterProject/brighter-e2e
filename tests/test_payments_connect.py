@@ -8,7 +8,9 @@ from e2e import config
 from e2e.clients import stripe_hooks
 
 
-def test_connect_onboard_and_bank_account(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
+def test_connect_onboard_and_bank_account(
+    owner_client: tuple[httpx.Client, dict[str, str]],
+) -> None:
     owner, record = owner_client
 
     assert owner.get("/payments/connect/status").status_code == 200
@@ -47,7 +49,9 @@ def test_connect_onboard_and_bank_account(owner_client: tuple[httpx.Client, dict
     assert owner.get("/payments/bank-account/").status_code == 200
 
 
-def test_bank_transfer_intent_lifecycle(owner_client: tuple[httpx.Client, dict[str, str]]) -> None:
+def test_bank_transfer_intent_lifecycle(
+    owner_client: tuple[httpx.Client, dict[str, str]],
+) -> None:
     owner, _ = owner_client
     create = owner.post(
         "/payments/bank-transfer", json={"amount": "120.00", "currency": "EUR"}

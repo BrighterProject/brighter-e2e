@@ -29,5 +29,8 @@ def test_protected_write_without_scope_is_forbidden(
     users.login(anon_client, user_record["username"], user_record["password"])
     # A freshly registered user has no properties:write scope.
     resp = anon_client.post("/properties", json={})
-    assert resp.status_code in (403, 422)  # 403 = scope denied, 422 only if authz passes
+    assert resp.status_code in (
+        403,
+        422,
+    )  # 403 = scope denied, 422 only if authz passes
     assert resp.status_code == 403
