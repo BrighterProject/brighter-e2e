@@ -1,0 +1,24 @@
+[project]
+name = "brighter-e2e"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-xdist>=3.8.0",
+    "tenacity>=9.1.4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# loadgroup lets tests that must serialize share one worker (via the
+# xdist_group marker) instead of forcing the whole suite single-threaded.
+addopts = "-ra --dist loadgroup"
+markers = [
+    "serial: test mutates shared/global state (seeded plans, admin row); pin to one xdist group",
+]
