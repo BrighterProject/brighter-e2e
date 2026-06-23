@@ -18,7 +18,7 @@ def test_owner_subscription_lifecycle(
     slug = plans.json()[0]["slug"]
 
     checkout = owner.post(
-        "/payments/subscriptions", json={"plan_slug": slug, "locale": "en"}
+        "/payments/subscriptions/checkout", json={"plan_slug": slug, "locale": "en"}
     )
     assert checkout.status_code in (200, 201)
     session_id = checkout.json().get("session_id") or checkout.json().get("id")

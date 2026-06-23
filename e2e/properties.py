@@ -50,6 +50,6 @@ def create_property(
             },
         ],
     }
-    resp = owner_client.post("/properties", json=payload)
+    resp = owner_client.post("/properties/", json=payload)
     resp.raise_for_status()
     return resp.json()

@@ -27,7 +27,7 @@ def register_user(client: httpx.Client) -> dict[str, str]:
         "email": f"e2e_{suffix}@example.test",
         "password": "Sup3rSecret!",
     }
-    resp = client.post("/users", json=payload)
+    resp = client.post("/users/", json=payload)
     resp.raise_for_status()
     body = resp.json()
     return {**payload, "id": body["id"]}
@@ -36,7 +36,7 @@ def register_user(client: httpx.Client) -> dict[str, str]:
 def login(client: httpx.Client, username: str, password: str) -> None:
     """Log in via the OAuth2 password form; the access_token cookie is stored."""
     resp = client.post(
-        "/auth",
+        "/auth/token",
         data={"username": username, "password": password},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )

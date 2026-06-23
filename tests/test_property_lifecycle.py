@@ -48,4 +48,4 @@ def test_property_requires_bg_translation(
             }
         ],
     }
-    assert client.post("/properties", json=bad).status_code == 422
+    assert client.post("/properties/", json=bad).status_code == 422

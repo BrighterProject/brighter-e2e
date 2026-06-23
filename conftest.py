@@ -17,7 +17,7 @@ from e2e.http import make_client
 def _wait_for_stack() -> None:
     """Warm-up gate: poll a real route through Traefik until it answers 2xx."""
     with httpx.Client(base_url=config.BASE_URL, timeout=5.0) as c:
-        assert c.get("/properties").status_code == 200
+        assert c.get("/properties/").status_code == 200
 
 
 @pytest.fixture(scope="session", autouse=True)

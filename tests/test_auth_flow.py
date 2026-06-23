@@ -17,7 +17,7 @@ def test_login_sets_httponly_cookie(
 
 def test_protected_route_requires_cookie(user_record: dict[str, str]) -> None:
     with make_client() as client:  # no cookie
-        resp = client.get("/users/me")
+        resp = client.get("/users/@me/get")
         assert resp.status_code == 401
 
 
@@ -25,11 +25,11 @@ def test_bearer_fallback_is_accepted(
     anon_client: httpx.Client, user_record: dict[str, str]
 ) -> None:
     resp = anon_client.post(
-        "/auth",
+        "/auth/token",
         data={"username": user_record["username"], "password": user_record["password"]},
     )
     token = resp.json()["access_token"]
     with make_client() as bare:
         bare.cookies.clear()
-        r = bare.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+        r = bare.get("/users/@me/get", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200

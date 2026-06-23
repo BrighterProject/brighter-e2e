@@ -20,7 +20,7 @@ def test_checkout_then_webhook_marks_paid(
         booking = bookings.create_booking(guest, prop["id"], email=rec["email"])
 
         # Create a checkout session (talks to stripe-mock).
-        resp = guest.post("/payments", json={"booking_id": booking["id"]})
+        resp = guest.post("/payments/checkout", json={"booking_id": booking["id"]})
         assert resp.status_code in (200, 201)
         session_id = resp.json().get("session_id") or resp.json().get("id")
 
