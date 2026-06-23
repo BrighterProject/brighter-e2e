@@ -1,5 +1,11 @@
 name: e2e
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  repository_dispatch:
+    types: [service-merged]
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -8,6 +14,12 @@ jobs:
       E2E_ADMIN_PASS: Adm1nSecret!
       OTEL_SDK_DISABLED: "true"
     steps:
+      - name: Log triggering service
+        if: github.event_name == 'repository_dispatch'
+        env:
+          TRIGGERING_SERVICE: ${{ github.event.client_payload.service }}
+          TRIGGERING_SHA: ${{ github.event.client_payload.sha }}
+        run: echo "Triggered by $TRIGGERING_SERVICE @ $TRIGGERING_SHA"
       - uses: actions/checkout@v4
         with: { path: brighter-e2e }
       # The compose build contexts use ../brighter-* relative paths, so every
