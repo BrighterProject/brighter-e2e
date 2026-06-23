@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 
-BASE_URL: str = os.environ.get("BASE_URL", "http://localhost")
+# Traefik exposes every backend service under the /api prefix (stripped by the
+# api-strip middleware), exactly as the frontend and admin-panel clients call it.
+BASE_URL: str = os.environ.get("BASE_URL", "http://localhost/api")
 MAILPIT_URL: str = os.environ.get("MAILPIT_URL", "http://localhost:8025")
 STRIPE_WEBHOOK_SECRET: str = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_e2e")
 STRIPE_CONNECT_WEBHOOK_SECRET: str = os.environ.get(
