@@ -24,7 +24,7 @@ def register_user(client: httpx.Client) -> dict[str, str]:
     payload = {
         "username": f"e2e_{suffix}",
         "full_name": "E2E User",
-        "email": f"e2e_{suffix}@example.test",
+        "email": f"e2e_{suffix}@example.com",
         "password": "Sup3rSecret!",
     }
     resp = client.post("/users/", json=payload)
@@ -62,8 +62,9 @@ def register_owner(client: httpx.Client) -> dict[str, str]:
     payload = {
         "username": f"e2eowner_{suffix}",
         "full_name": "E2E Owner",
-        "email": f"e2eowner_{suffix}@example.test",
+        "email": f"e2eowner_{suffix}@example.com",
         "password": "Sup3rSecret!",
+        "phone": "+359888123456",
     }
     resp = client.post("/users/register-owner", json=payload)
     resp.raise_for_status()

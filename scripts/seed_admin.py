@@ -25,7 +25,7 @@ async def seed() -> None:
         username=username,
         defaults={
             "full_name": "E2E Admin",
-            "email": f"{username}@example.test",
+            "email": f"{username}@example.com",
             "hashed_password": get_password_hash(password),
             "is_active": True,
             "scopes": scopes,

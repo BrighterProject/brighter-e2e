@@ -13,7 +13,7 @@ def create_booking(
     property_id: str,
     *,
     nights: int = 2,
-    email: str = "guest@example.test",
+    email: str = "guest@example.com",
 ) -> dict[str, Any]:
     """Create a booking starting tomorrow for `nights` nights."""
     start = date.today() + timedelta(days=1)
