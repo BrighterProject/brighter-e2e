@@ -26,6 +26,9 @@ jobs:
       E2E_ADMIN_USER: e2e_admin
       E2E_ADMIN_PASS: Adm1nSecret!
       OTEL_SDK_DISABLED: "true"
+      # Route notifications-ms verification mail to mailpit (compose passes this
+      # through; notifications-ms settings default to "resend" otherwise).
+      EMAIL_TRANSPORT: smtp
     steps:
       # Only the service repos vary by event: the dev-merge dispatch (and manual
       # runs) test the integration branch (dev); push/PR to the release branch
