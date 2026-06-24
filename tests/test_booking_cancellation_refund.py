@@ -20,7 +20,7 @@ def test_cancellation_under_each_policy(
         users.login(guest, rec["username"], rec["password"])
         booking = bookings.create_booking(guest, prop["id"], email=rec["email"])
         resp = guest.patch(
-            f"/bookings/{booking['id']}/status", json={"status": "CANCELLED"}
+            f"/bookings/{booking['id']}/status", json={"status": "cancelled"}
         )
         assert resp.status_code == 200
-        assert resp.json()["status"] == "CANCELLED"
+        assert resp.json()["status"] == "cancelled"

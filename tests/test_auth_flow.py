@@ -31,5 +31,9 @@ def test_bearer_fallback_is_accepted(
     token = resp.json()["access_token"]
     with make_client() as bare:
         bare.cookies.clear()
-        r = bare.get("/users/@me/get", headers={"Authorization": f"Bearer {token}"})
+        # Bearer fallback lives in Traefik's forwardAuth -> /auth/verify, which
+        # injects X-User-Id downstream. users-ms's own endpoints re-validate the
+        # JWT via a cookie-only APIKeyCookie (no Bearer fallback by design), so we
+        # assert the contract against a downstream service that trusts the headers.
+        r = bare.get("/bookings/", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200

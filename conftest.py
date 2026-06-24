@@ -10,6 +10,7 @@ import pytest
 from tenacity import retry, stop_after_delay, wait_fixed
 
 from e2e import config, users
+from e2e.clients import subscriptions
 from e2e.http import make_client
 
 
@@ -48,6 +49,8 @@ def owner_client() -> Generator[tuple[httpx.Client, dict[str, str]], None, None]
     with make_client() as client:
         record = users.register_owner(client)
         users.login(client, record["username"], record["password"])
+        # Owners need an active subscription before properties-ms lets them list.
+        subscriptions.activate_subscription(client, record["id"])
         yield client, record
 
 

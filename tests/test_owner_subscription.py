@@ -11,14 +11,16 @@ from e2e.clients import stripe_hooks
 def test_owner_subscription_lifecycle(
     owner_client: tuple[httpx.Client, dict[str, str]],
 ) -> None:
-    owner, _ = owner_client
+    owner, record = owner_client
 
     plans = owner.get("/payments/subscriptions/plans")
     assert plans.status_code == 200 and plans.json(), "seed_subscription_plans must run"
-    slug = plans.json()[0]["slug"]
+    # Enterprise requires manual activation and can't be self-checked-out; pick a
+    # self-serve plan instead.
+    slug = next(p["slug"] for p in plans.json() if p["slug"] != "enterprise")
 
     checkout = owner.post(
-        "/payments/subscriptions/checkout", json={"plan_slug": slug, "locale": "en"}
+        "/payments/subscriptions/checkout", params={"plan_slug": slug, "locale": "en"}
     )
     assert checkout.status_code in (200, 201)
     session_id = checkout.json().get("session_id") or checkout.json().get("id")
@@ -44,5 +46,10 @@ def test_owner_subscription_lifecycle(
     me = owner.get("/payments/subscriptions/me")
     assert me.status_code == 200
 
-    gate = owner.get("/payments/subscriptions/can-add-listing")
+    # can-add-listing is the internal quota check properties-ms calls; it requires
+    # the owner_id query param it would normally forward.
+    gate = owner.get(
+        "/payments/subscriptions/can-add-listing", params={"owner_id": record["id"]}
+    )
     assert gate.status_code == 200
+    assert gate.json()["allowed"] is True
