@@ -1,9 +1,15 @@
 name: e2e
+# The suite runs only where a meaningful service stack exists to test against:
+#   repository_dispatch  -> dev integration gate (each service's ci.yml fires it
+#                           on merge to dev); the suite is checked out from the
+#                           default branch, so suite changes are validated here.
+#   workflow_dispatch    -> manual run against any service_ref.
+#   push: [main]         -> release validation (dormant until a main branch exists).
+# We deliberately do NOT run on push/pull_request to master: those build the
+# stack from main (unpromoted), so they fail by-design and only add noise.
 on:
   push:
-    branches: [master, main]
-  pull_request:
-    branches: [master, main]
+    branches: [main]
   repository_dispatch:
     types: [service-merged]
   workflow_dispatch:
