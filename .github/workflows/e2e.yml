@@ -22,6 +22,9 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    # A healthy run is ~4 min; cap well above that so a wedged stack (hung
+    # build, container never healthy) fails fast instead of burning the 6h default.
+    timeout-minutes: 20
     env:
       E2E_ADMIN_USER: e2e_admin
       E2E_ADMIN_PASS: Adm1nSecret!
