@@ -18,7 +18,11 @@ E2E_ADMIN_PASS ?= Adm1nSecret!
 export E2E_ADMIN_USER
 export E2E_ADMIN_PASS
 
-.PHONY: up seed seed-admin test e2e lint typecheck clean-e2e-db
+.PHONY: up seed seed-admin test e2e dispatch watch lint typecheck clean-e2e-db
+
+# GitHub repo + default service ref for the remote (manual) e2e workflow.
+GH_REPO := BrighterProject/brighter-e2e
+REF ?= dev
 
 up:
 	$(COMPOSE) up -d --wait
@@ -35,6 +39,17 @@ test:
 # Full local run: boot, seed, then test. CI splits these into separate steps
 # (make up / make seed / make test) for per-phase failure attribution.
 e2e: up seed test
+
+# Trigger the remote (GitHub Actions) e2e suite, which is manual-only.
+# Default tests services at dev; override with: make dispatch REF=main
+dispatch:
+	gh workflow run e2e.yml --repo $(GH_REPO) -f service_ref=$(REF)
+	@echo "Dispatched e2e (service_ref=$(REF)). Follow it with: make watch"
+
+# Stream the most recent e2e run to completion.
+watch:
+	gh run watch --repo $(GH_REPO) --exit-status \
+	  $$(gh run list --repo $(GH_REPO) --workflow e2e.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 
 lint:
 	uv run ruff check . && uv run ruff format --check .
