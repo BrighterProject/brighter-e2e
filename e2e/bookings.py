@@ -14,11 +14,12 @@ def create_booking(
     *,
     nights: int = 2,
     email: str = "guest@example.com",
+    payment_method: str | None = None,
 ) -> dict[str, Any]:
     """Create a booking starting tomorrow for `nights` nights."""
     start = date.today() + timedelta(days=1)
     end = start + timedelta(days=nights)
-    payload = {
+    payload: dict[str, Any] = {
         "property_id": property_id,
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
@@ -26,6 +27,8 @@ def create_booking(
         "guest_email": email,
         "guest_phone": "+359888000000",
     }
+    if payment_method is not None:
+        payload["payment_method"] = payment_method
     resp = client.post("/bookings/", json=payload)
     resp.raise_for_status()
     return resp.json()

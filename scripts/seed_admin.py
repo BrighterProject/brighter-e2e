@@ -12,15 +12,35 @@ from tortoise import Tortoise
 
 from app.auth import get_password_hash
 from app.models import User
-from app.scopes import DEFAULT_ADMIN_SCOPES
+from app.scopes import (
+    BookingScope,
+    NotificationScope,
+    PaymentScope,
+    PropertyScope,
+    UserScope,
+)
 from app.settings import db_url
+
+# The e2e admin is omnipotent: grant every scope (including granular admin
+# scopes like admin:properties:write that super-scopes alone don't satisfy).
+ALL_SCOPES = [
+    str(scope)
+    for enum in (
+        UserScope,
+        PropertyScope,
+        BookingScope,
+        PaymentScope,
+        NotificationScope,
+    )
+    for scope in enum
+]
 
 
 async def seed() -> None:
     username = os.environ["E2E_ADMIN_USER"]
     password = os.environ["E2E_ADMIN_PASS"]
     await Tortoise.init(db_url=db_url, modules={"models": ["app.models"]})
-    scopes = [str(s) for s in DEFAULT_ADMIN_SCOPES]
+    scopes = ALL_SCOPES
     await User.update_or_create(
         username=username,
         defaults={

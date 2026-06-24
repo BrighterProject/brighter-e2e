@@ -2,10 +2,17 @@ COMPOSE := docker compose -f ../brighter-compose/docker-compose.yml
 export COMPOSE_PROFILES := e2e
 export OTEL_SDK_DISABLED := true
 export STRIPE_API_BASE := http://stripe-mock:12111
+# Pin webhook signing secrets so the stack and the offline stripe_hooks signer
+# agree (shell env overrides any brighter-compose/.env). Must match config.py.
+export STRIPE_WEBHOOK_SECRET := whsec_e2e
+export STRIPE_CONNECT_WEBHOOK_SECRET := whsec_e2e_connect
 # Deliver verification email via SMTP → mailpit (not Resend) so the suite can
 # read the token. ASCII from-address avoids SMTPUTF8/IDNA handling for mailpit.
 export EMAIL_TRANSPORT := smtp
 export DEFAULT_FROM_EMAIL := Brighter <noreply@brighter.bg>
+# Disable users-ms rate limiting: the whole suite shares one Traefik-sourced IP
+# bucket, so per-minute registration caps would otherwise throttle parallel runs.
+export SLOWAPI_NO_LIMITS := 1
 E2E_ADMIN_USER ?= e2e_admin
 E2E_ADMIN_PASS ?= Adm1nSecret!
 export E2E_ADMIN_USER

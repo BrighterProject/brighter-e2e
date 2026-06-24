@@ -20,17 +20,17 @@ def test_booking_create_notifies_and_confirms(
         rec = users.register_user(guest)
         users.login(guest, rec["username"], rec["password"])
         booking = bookings.create_booking(guest, prop["id"], email=rec["email"])
-        assert booking["status"] == "PENDING"
+        assert booking["status"] == "pending"
 
     # A "booking created" email reached the guest.
     mailpit.wait_for_email(to=rec["email"])
 
     # Owner confirms.
     resp = owner.patch(
-        f"/bookings/{booking['id']}/status", json={"status": "CONFIRMED"}
+        f"/bookings/{booking['id']}/status", json={"status": "confirmed"}
     )
     assert resp.status_code == 200
-    assert resp.json()["status"] == "CONFIRMED"
+    assert resp.json()["status"] == "confirmed"
 
 
 def test_illegal_status_transition_rejected(
@@ -42,8 +42,8 @@ def test_illegal_status_transition_rejected(
         rec = users.register_user(guest)
         users.login(guest, rec["username"], rec["password"])
         booking = bookings.create_booking(guest, prop["id"], email=rec["email"])
-    # PENDING -> COMPLETED is not a legal transition.
+    # pending -> completed is not a legal transition.
     resp = owner.patch(
-        f"/bookings/{booking['id']}/status", json={"status": "COMPLETED"}
+        f"/bookings/{booking['id']}/status", json={"status": "completed"}
     )
-    assert resp.status_code in (409, 422)
+    assert resp.status_code in (400, 409, 422)

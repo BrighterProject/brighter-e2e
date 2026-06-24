@@ -28,6 +28,10 @@ def send_event(
     client: httpx.Client, path: str, event: dict, *, secret: str
 ) -> httpx.Response:
     """POST a signed event to a webhook endpoint and return the response."""
+    # stripe>=15 construct_event reads the top-level ``object`` to reject thin
+    # event notifications; a real Stripe event always carries ``object: event``,
+    # so inject it here rather than at every call site.
+    event = {"object": "event", **event}
     payload = json.dumps(event).encode()
     headers = {"Content-Type": "application/json", **signed_headers(payload, secret)}
     return client.post(path, content=payload, headers=headers)
@@ -42,8 +46,10 @@ def checkout_completed(session_id: str, metadata: dict[str, str]) -> dict[str, A
             "object": {
                 "id": session_id,
                 "object": "checkout.session",
+                "mode": "payment",
                 "payment_status": "paid",
                 "status": "complete",
+                "payment_intent": f"pi_{session_id}",
                 "metadata": metadata,
             }
         },
