@@ -1,11 +1,24 @@
 name: e2e
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   pull_request:
-    branches: [master]
+    branches: [master, main]
   repository_dispatch:
     types: [service-merged]
+  workflow_dispatch:
+    inputs:
+      service_ref:
+        description: "Git ref to check out for the service repos (e.g. dev, main)"
+        required: false
+        default: "dev"
+
+# A new push/dispatch supersedes in-flight runs for the same ref instead of
+# piling up cancelled runs.
+concurrency:
+  group: e2e-${{ github.ref }}-${{ github.event.action }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -14,30 +27,63 @@ jobs:
       E2E_ADMIN_PASS: Adm1nSecret!
       OTEL_SDK_DISABLED: "true"
     steps:
+      # Only the service repos vary by event: the dev-merge dispatch (and manual
+      # runs) test the integration branch (dev); push/PR to the release branch
+      # test main. Without this, a dev merge would build the stack from main and
+      # silently test the wrong code. The e2e suite itself always tracks the
+      # branch this workflow runs from (no ref:), so it needs no resolution here.
+      - name: Resolve service ref
+        id: ref
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_REF: ${{ github.event.inputs.service_ref }}
+        run: |
+          case "$EVENT" in
+            repository_dispatch)
+              echo "service_ref=dev" >> "$GITHUB_OUTPUT"
+              ;;
+            workflow_dispatch)
+              # Validate the manual input before it reaches a `ref:` checkout.
+              if ! printf '%s' "$INPUT_REF" | grep -qE '^[A-Za-z0-9._/-]+$'; then
+                echo "Invalid service_ref: $INPUT_REF" >&2
+                exit 1
+              fi
+              echo "service_ref=$INPUT_REF" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "service_ref=main" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
       - name: Log triggering service
         if: github.event_name == 'repository_dispatch'
         env:
           TRIGGERING_SERVICE: ${{ github.event.client_payload.service }}
           TRIGGERING_SHA: ${{ github.event.client_payload.sha }}
-        run: echo "Triggered by $TRIGGERING_SERVICE @ $TRIGGERING_SHA"
-      - uses: actions/checkout@v4
-        with: { path: brighter-e2e }
+        run: echo "Triggered by $TRIGGERING_SERVICE @ $TRIGGERING_SHA (service ref ${{ steps.ref.outputs.service_ref }})"
+
+      # The e2e suite tracks the branch this workflow runs from (the triggering
+      # ref for push/PR; the default branch for dispatch/manual).
+      - uses: actions/checkout@v5
+        with:
+          path: brighter-e2e
+
       # The compose build contexts use ../brighter-* relative paths, so every
       # service repo must be checked out as a sibling of brighter-compose.
-      - uses: actions/checkout@v4
+      # Infra repos (compose, postgres) live on main only.
+      - uses: actions/checkout@v5
         with: { repository: BrighterProject/brighter-compose, path: brighter-compose }
-      - uses: actions/checkout@v4
-        with: { repository: BrighterProject/brighter-users-ms, path: brighter-users-ms }
-      - uses: actions/checkout@v4
-        with: { repository: BrighterProject/brighter-properties-ms, path: brighter-properties-ms }
-      - uses: actions/checkout@v4
-        with: { repository: BrighterProject/brighter-bookings-ms, path: brighter-bookings-ms }
-      - uses: actions/checkout@v4
-        with: { repository: BrighterProject/brighter-payments-ms, path: brighter-payments-ms }
-      - uses: actions/checkout@v4
-        with: { repository: BrighterProject/brighter-notifications-ms, path: brighter-notifications-ms }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { repository: BrighterProject/brighter-postgres, path: brighter-postgres }
+      - uses: actions/checkout@v5
+        with: { repository: BrighterProject/brighter-users-ms, path: brighter-users-ms, ref: "${{ steps.ref.outputs.service_ref }}" }
+      - uses: actions/checkout@v5
+        with: { repository: BrighterProject/brighter-properties-ms, path: brighter-properties-ms, ref: "${{ steps.ref.outputs.service_ref }}" }
+      - uses: actions/checkout@v5
+        with: { repository: BrighterProject/brighter-bookings-ms, path: brighter-bookings-ms, ref: "${{ steps.ref.outputs.service_ref }}" }
+      - uses: actions/checkout@v5
+        with: { repository: BrighterProject/brighter-payments-ms, path: brighter-payments-ms, ref: "${{ steps.ref.outputs.service_ref }}" }
+      - uses: actions/checkout@v5
+        with: { repository: BrighterProject/brighter-notifications-ms, path: brighter-notifications-ms, ref: "${{ steps.ref.outputs.service_ref }}" }
       - uses: astral-sh/setup-uv@v5
       - name: Lint + typecheck the e2e suite
         working-directory: brighter-e2e
@@ -53,14 +99,18 @@ jobs:
           echo "::group::container states"
           docker ps -a
           echo "::endgroup::"
-          echo "::group::healthcheck logs (per container)"
+          # Only dump logs for containers that are unhealthy or have exited
+          # non-zero — healthy containers just add noise to the failure report.
+          echo "::group::unhealthy / exited containers"
           for c in $(docker ps -aq); do
             name=$(docker inspect --format '{{.Name}}' "$c")
-            health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$c")
-            echo "=== $name -> $health ==="
-            docker inspect --format '{{if .State.Health}}{{range .State.Health.Log}}exit={{.ExitCode}} out={{.Output}}{{println}}{{end}}{{end}}' "$c"
+            health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$c")
+            exitcode=$(docker inspect --format '{{.State.ExitCode}}' "$c")
+            state=$(docker inspect --format '{{.State.Status}}' "$c")
+            if [ "$health" = "unhealthy" ] || { [ "$state" = "exited" ] && [ "$exitcode" != "0" ]; }; then
+              echo "=== $name -> state=$state health=$health exit=$exitcode ==="
+              docker inspect --format '{{if .State.Health}}{{range .State.Health.Log}}exit={{.ExitCode}} out={{.Output}}{{println}}{{end}}{{end}}' "$c"
+              docker logs --tail 200 "$c" 2>&1 || true
+            fi
           done
-          echo "::endgroup::"
-          echo "::group::compose logs"
-          docker compose -f brighter-compose/docker-compose.yml logs --no-color
           echo "::endgroup::"
