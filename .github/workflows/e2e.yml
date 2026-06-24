@@ -103,9 +103,15 @@ jobs:
       - name: Lint + typecheck the e2e suite
         working-directory: brighter-e2e
         run: make lint && make typecheck
-      - name: Boot stack, seed, run e2e
+      - name: Boot stack
         working-directory: brighter-e2e
-        run: make e2e
+        run: make up
+      - name: Seed data
+        working-directory: brighter-e2e
+        run: make seed
+      - name: Run e2e tests
+        working-directory: brighter-e2e
+        run: make test
       - name: Dump logs on failure
         if: failure()
         env:
