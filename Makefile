@@ -2,6 +2,10 @@ COMPOSE := docker compose -f ../brighter-compose/docker-compose.yml
 export COMPOSE_PROFILES := e2e
 export OTEL_SDK_DISABLED := true
 export STRIPE_API_BASE := http://stripe-mock:12111
+# Deliver verification email via SMTP → mailpit (not Resend) so the suite can
+# read the token. ASCII from-address avoids SMTPUTF8/IDNA handling for mailpit.
+export EMAIL_TRANSPORT := smtp
+export DEFAULT_FROM_EMAIL := Brighter <noreply@brighter.bg>
 E2E_ADMIN_USER ?= e2e_admin
 E2E_ADMIN_PASS ?= Adm1nSecret!
 export E2E_ADMIN_USER

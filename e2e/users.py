@@ -6,6 +6,8 @@ import uuid
 
 import httpx
 
+from e2e.clients import mailpit
+
 # Owner scopes the platform grants; kept here so tests don't import service code.
 DEFAULT_OWNER_SCOPES: list[str] = [
     "properties:me",
@@ -30,7 +32,19 @@ def register_user(client: httpx.Client) -> dict[str, str]:
     resp = client.post("/users/", json=payload)
     resp.raise_for_status()
     body = resp.json()
+    verify_email(client, payload["email"])
     return {**payload, "id": body["id"]}
+
+
+def verify_email(client: httpx.Client, email: str) -> None:
+    """Activate a freshly-registered account via the email verification link.
+
+    Reads the token from the email mailpit captured, then hits the verify
+    endpoint so the user becomes active and can authenticate.
+    """
+    token = mailpit.fetch_verification_token(email)
+    resp = client.get("/auth/verify-email", params={"token": token})
+    resp.raise_for_status()
 
 
 def login(client: httpx.Client, username: str, password: str) -> None:
@@ -68,4 +82,5 @@ def register_owner(client: httpx.Client) -> dict[str, str]:
     }
     resp = client.post("/users/register-owner", json=payload)
     resp.raise_for_status()
+    verify_email(client, payload["email"])
     return {**payload, "id": resp.json()["id"]}
