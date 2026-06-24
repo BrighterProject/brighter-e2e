@@ -18,7 +18,7 @@ E2E_ADMIN_PASS ?= Adm1nSecret!
 export E2E_ADMIN_USER
 export E2E_ADMIN_PASS
 
-.PHONY: up seed seed-admin e2e lint typecheck clean-e2e-db
+.PHONY: up seed seed-admin test e2e lint typecheck clean-e2e-db
 
 up:
 	$(COMPOSE) up -d --wait
@@ -29,8 +29,12 @@ seed-admin:
 seed: seed-admin
 	$(COMPOSE) exec -T payments-ms uv run python scripts/seed_subscription_plans.py
 
-e2e: up seed
+test:
 	uv run pytest -n auto
+
+# Full local run: boot, seed, then test. CI splits these into separate steps
+# (make up / make seed / make test) for per-phase failure attribution.
+e2e: up seed test
 
 lint:
 	uv run ruff check . && uv run ruff format --check .
