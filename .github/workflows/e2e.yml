@@ -1,17 +1,10 @@
 name: e2e
-# The suite runs only where a meaningful service stack exists to test against:
-#   repository_dispatch  -> dev integration gate (each service's ci.yml fires it
-#                           on merge to dev); the suite is checked out from the
-#                           default branch, so suite changes are validated here.
-#   workflow_dispatch    -> manual run against any service_ref.
-#   push: [main]         -> release validation (dormant until a main branch exists).
-# We deliberately do NOT run on push/pull_request to master: those build the
-# stack from main (unpromoted), so they fail by-design and only add noise.
+# Manual-only by design. A repository_dispatch from a service merge does NOT
+# surface as a check/status on the service PR (and fires post-merge anyway), so
+# auto-triggering only produced unwatched runs in this repo. Run deliberately —
+# Actions tab or `gh workflow run e2e.yml -f service_ref=<dev|main|...>` — so it
+# is always clear when the suite ran and that its result must be reviewed.
 on:
-  push:
-    branches: [main]
-  repository_dispatch:
-    types: [service-merged]
   workflow_dispatch:
     inputs:
       service_ref:
@@ -19,10 +12,9 @@ on:
         required: false
         default: "dev"
 
-# A new push/dispatch supersedes in-flight runs for the same ref instead of
-# piling up cancelled runs.
+# A new run supersedes an in-flight one for the same service_ref.
 concurrency:
-  group: e2e-${{ github.ref }}-${{ github.event.action }}
+  group: e2e-${{ github.event.inputs.service_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -31,53 +23,23 @@ jobs:
     # A healthy run is ~4 min; cap well above that so a wedged stack (hung
     # build, container never healthy) fails fast instead of burning the 6h default.
     timeout-minutes: 20
-    env:
-      E2E_ADMIN_USER: e2e_admin
-      E2E_ADMIN_PASS: Adm1nSecret!
-      OTEL_SDK_DISABLED: "true"
-      # Route notifications-ms verification mail to mailpit (compose passes this
-      # through; notifications-ms settings default to "resend" otherwise).
-      EMAIL_TRANSPORT: smtp
-      # Disable users-ms rate limiting: the suite's many registrations/logins all
-      # arrive via Traefik, so they share one IP bucket and trip 429s otherwise.
-      SLOWAPI_NO_LIMITS: "1"
+    # EMAIL_TRANSPORT, SLOWAPI_NO_LIMITS, OTEL_SDK_DISABLED and the admin creds are
+    # exported by the Makefile (single source of truth); no need to repeat them here.
     steps:
-      # Only the service repos vary by event: the dev-merge dispatch (and manual
-      # runs) test the integration branch (dev); push/PR to the release branch
-      # test main. Without this, a dev merge would build the stack from main and
-      # silently test the wrong code. The e2e suite itself always tracks the
-      # branch this workflow runs from (no ref:), so it needs no resolution here.
+      # Validate the manual service_ref input before it reaches a `ref:` checkout.
       - name: Resolve service ref
         id: ref
         env:
-          EVENT: ${{ github.event_name }}
           INPUT_REF: ${{ github.event.inputs.service_ref }}
         run: |
-          case "$EVENT" in
-            repository_dispatch)
-              echo "service_ref=dev" >> "$GITHUB_OUTPUT"
-              ;;
-            workflow_dispatch)
-              # Validate the manual input before it reaches a `ref:` checkout.
-              if ! printf '%s' "$INPUT_REF" | grep -qE '^[A-Za-z0-9._/-]+$'; then
-                echo "Invalid service_ref: $INPUT_REF" >&2
-                exit 1
-              fi
-              echo "service_ref=$INPUT_REF" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "service_ref=main" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-      - name: Log triggering service
-        if: github.event_name == 'repository_dispatch'
-        env:
-          TRIGGERING_SERVICE: ${{ github.event.client_payload.service }}
-          TRIGGERING_SHA: ${{ github.event.client_payload.sha }}
-        run: echo "Triggered by $TRIGGERING_SERVICE @ $TRIGGERING_SHA (service ref ${{ steps.ref.outputs.service_ref }})"
+          if ! printf '%s' "$INPUT_REF" | grep -qE '^[A-Za-z0-9._/-]+$'; then
+            echo "Invalid service_ref: $INPUT_REF" >&2
+            exit 1
+          fi
+          echo "service_ref=$INPUT_REF" >> "$GITHUB_OUTPUT"
 
-      # The e2e suite tracks the branch this workflow runs from (the triggering
-      # ref for push/PR; the default branch for dispatch/manual).
+      # The e2e suite is checked out from the branch the workflow runs from
+      # (the default branch, since runs are manual).
       - uses: actions/checkout@v5
         with:
           path: brighter-e2e
