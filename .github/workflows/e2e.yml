@@ -29,6 +29,9 @@ jobs:
       # Route notifications-ms verification mail to mailpit (compose passes this
       # through; notifications-ms settings default to "resend" otherwise).
       EMAIL_TRANSPORT: smtp
+      # Disable users-ms rate limiting: the suite's many registrations/logins all
+      # arrive via Traefik, so they share one IP bucket and trip 429s otherwise.
+      SLOWAPI_NO_LIMITS: "1"
     steps:
       # Only the service repos vary by event: the dev-merge dispatch (and manual
       # runs) test the integration branch (dev); push/PR to the release branch
